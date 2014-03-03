@@ -2,7 +2,7 @@
 /**
  * Class registers meta boxes used by this plugin on the post page
  * 
- * @since 1.0
+ * @since 1.1
  * @package dnsprograms-plugins
  */
 if ( !class_exists( 'dns_meta_boxes' ) ) {
@@ -25,7 +25,7 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 			add_filter( 'manage_edit-post_columns', array( $this, 'edit_posts_columns' ) );
 			add_action( 'manage_posts_custom_column', array( $this, 'list_program_columns' ), 10, 2 );
 			add_action( 'quick_edit_custom_box', array( $this, 'add_quick_edit' ) );
-			add_action( 'admin_footer-edit.php', array( $this, 'quick_edit_scripts' ), 11 );
+			add_action( 'admin_print_scripts-edit.php', array( $this, 'quick_edit_scripts' ), 11 );
 				
 			// Hack to hide the extra program columns in the program listing by default
 			add_action( 'wp_login', array( $this, 'hide_edit_program_columns' ) );
@@ -52,12 +52,10 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 		/**
 		 * Register Quick Edit JS in footer
 		 */
-		function quick_edit_scripts() {
-			$slug = 'book';
-
-			if ( ( isset( $_GET[ 'page' ] ) && $_GET[ 'page' ] == $slug )
-					|| ( isset( $_GET[ 'post_type' ] ) && $_GET[ 'post_type' ] == $slug ) ) {
-				echo '<script type="text/javascript" src="', plugins_url('scripts/admin_edit.js', __FILE__), '"></script>';
+		function quick_edit_scripts( ) {
+			if ( 'post' == get_query_var( 'post_type' ) ) {
+				wp_enqueue_script( 'dns-quick-edit', plugins_url( '../js/dns-quick-edit.js', __FILE__ ), array(), 
+					DNS_PROGRAM_PLUGIN_VERSION, true );
 			}
 		}
 		
@@ -434,7 +432,8 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 		 */
 		public function program_calendar_save( $post_id ) {
 			// Run security check for this save attempt
-			if ( false === $this->security_check( $post_id, self::$calendar_nonce_prefix ) ) {
+			if ( false === $this->security_check( $post_id, self::$calendar_nonce_prefix ) &&
+					false === $this->security_check( $post_id, 'dns-quick-edit-program' ) ) {
 				return $post_id;
 			}
 				
@@ -482,7 +481,8 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 		 */
 		public function program_details_save( $post_id ) {
 			// Run security check for this save attempt
-			if ( false === $this->security_check( $post_id, self::$details_nonce_prefix ) ) {
+			if ( false === $this->security_check( $post_id, self::$details_nonce_prefix ) &&
+					false === $this->security_check( $post_id, 'dns-quick-edit-program' ) ) {
 				return $post_id;
 			}
 			
