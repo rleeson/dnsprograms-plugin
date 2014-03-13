@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DNS Program Scheduler
  * Description: Manage program schedules for Delaware Nature Society
- * Version: 1.0
+ * Version: 1.1
  * Author: Ryan Leeson
  * Author URI: http://ryanleeson.com
  * License: GPL2
@@ -16,6 +16,7 @@ define( 'CURRENCY_FORMAT', '/\b\d{1,3}(?:,?\d{3})*(?:\.\d{2})?\b/' );
 define( 'DATE_FORMAT', '/^((0?[1-9]|1[012])[- \/\.](0?[1-9]|[12][0-9]|3[01])[- \/\.](19|20)?[0-9]{2})*$/' );
 define( 'DNS_PROGRAM_CHARACTER_LIMIT', 500 );
 define( 'DNS_PROGRAM_NUMBER_FORMAT', '/^[a-zA-Z0-9]{3}-[a-zA-Z0-9]{3}-[a-zA-Z0-9]{2}$/' );
+define( 'DNS_PROGRAM_PLUGIN_VERSION', '1.1' );
 
 function dns_enqueue_scripts() {
 	wp_enqueue_script( 'jquery-validate', plugins_url( 'js/jquery.validate.min.js', __FILE__ ), 
@@ -25,6 +26,8 @@ function dns_enqueue_scripts() {
 		array( 'jquery' ) );
 	wp_enqueue_script( 'dnsprograms-js', plugins_url( 'js/dnsprograms.js' , __FILE__ ), 
 		array( 'jquery-validate' ), '1.0', true );
+	wp_enqueue_script( 'dnsprograms-program-admin-js', plugins_url( 'js/dnsprograms-admin.js' , __FILE__ ), 
+		array( 'jquery' ), '1.0', true );
 	wp_enqueue_style( 'dnsprograms-css', plugins_url( 'css/dnsprograms.css', __FILE__ ) );
 	wp_enqueue_style( 'timepicker-css', plugins_url( 'css/jquery.timepicker.css', __FILE__ ) );
 	wp_enqueue_style( 'jquery-ui-smoothness', plugins_url( 'css/jquery-ui-1.10.3.custom.min.css', __FILE__ ) );

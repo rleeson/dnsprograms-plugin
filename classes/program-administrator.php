@@ -2,6 +2,7 @@
 
 class dns_program_admin {
 	public function __construct() {
+		add_action( 'admin_init', array( $this, 'export_csv_handler' ) );
 		add_action( 'admin_menu', array( $this, 'program_csv_menu' ) );
 	}
 	
@@ -9,21 +10,12 @@ class dns_program_admin {
 	 * Create the Menu Page
 	 */
 	public function program_csv_menu() {
-		global $pagenow; 
-		
 		add_submenu_page( 'edit.php', 'Export Programs', 'Export Programs', 'manage_options', 
-			'export-programs', array( $this, 'export_csv_callback' ) );
+			'export-programs', array( $this, 'export_csv_page' ) );
 		add_submenu_page( 'edit.php', 'Update Programs', 'Update Programs', 'manage_options',
-		'update-programs', array( $this, 'update_csv_callback' ) );
-		
-		if ( $pagenow == 'edit.php' && isset( $_GET[ 'page' ] ) && $_GET[ 'page' ] == 'export-programs' ) {
-			$this->export_csv_callback();
-			
-			// Required to terminate request and download file
-			die();
-		}
+			'update-programs', array( $this, 'update_csv_callback' ) );
 	}
-	
+
 	/****************************************
 	 * Import Functionality					*
 	****************************************/
@@ -162,11 +154,50 @@ class dns_program_admin {
 	/****************************************
 	 * Export Functionality					*
 	 ****************************************/
-		
+
 	/**
-	 * AJAX Callback for the Export CSV button
+	 * Callback for the Export CSV action
+	 */ 
+	function export_csv_handler() {
+		global $pagenow;
+		
+		if ( $pagenow == 'edit.php' && isset( $_GET[ 'export' ] ) && $_GET[ 'export' ] == 'programs' 
+				&& isset( $_GET[ 'brochure' ] ) ) {
+			$brochure = ( $_GET[ 'brochure' ] === 'all' ) ? '' : $_GET[ 'brochure' ];
+			$this->export_csv_callback( $brochure );
+			
+			// Required to terminate request and download file
+			die();
+		}
+	}
+	
+	
+	function export_csv_page() {	
+		$brochure_editions = get_terms( array( 'brochure-editions' ) );
+		?>
+			<form method="post" action="" enctype="multipart/form-data">
+				<h2>Export Program Data</h2>
+				<p>Select 'All' to export all programs, or an individual Brochure Edition for all programs in that edition.</p>
+				<label for="brochure">
+					Brochure Edition
+					<select id="brochure" name="brochure">
+						<option value="all">All</option>
+					<?php 
+						foreach ( $brochure_editions as $edition ) {
+							printf( '<option value="%s">%s (%s)</option>', $edition->slug, $edition->name, $edition->count );
+						}
+					?>
+					</select>
+				</label>
+				<a href="edit.php?export=programs" id="dns_export_program_csv">Export</a>
+			</form>
+		<?php 
+	}
+	
+	/**
+	 * Callback for the Export CSV action
 	 */
-	function export_csv_callback() {
+	function export_csv_callback( $brochure ) {
 		if ( !current_user_can( 'manage_options' ) ) {
 			wp_die( 'You are not alowed to export the program list.' );
 		}
@@ -174,8 +205,12 @@ class dns_program_admin {
 		$filedate = date( 'Ymd-gia' );
 		$filename = sprintf( 'program-export-%s.csv', $filedate );
 		
+		if ( !empty( $brochure ) ) {
+			$filename = sprintf( 'program-export-%s-%s.csv', $brochure, $filedate );
+		}
+		
 		$this->send_headers( $filename );
-		echo $this->process_program_csv_export();
+		echo $this->process_program_csv_export( $brochure );
 	}
 	
 	/**
@@ -200,10 +235,10 @@ class dns_program_admin {
 	 * Process the Program Listing and turn into a CSV output buffer
 	 * @return string Full CSV output buffer
 	 */
-	public function process_program_csv_export() {
+	public function process_program_csv_export( $brochure ) {
 		global $dns_taxonomies;
 		
-		$results = $this->retrieve_program_data();
+		$results = $this->retrieve_program_data( $brochure );
 				
 		ob_start();
 		$fh = @fopen( 'php://output', 'w' );
@@ -225,13 +260,23 @@ class dns_program_admin {
 		return ob_get_clean();
 	}
 	
-	public function retrieve_program_data() {
+	public function retrieve_program_data( $brochure ) {
 		$array = array();
 		$args = array(
 			'post_type' 		=> 'post',
 			'post_status' 		=> array( 'draft', 'pending', 'publish' ),
 			'posts_per_page'	=> -1
 		);
+
+		if ( !empty( $brochure ) ) {
+			$args[ 'tax_query' ] = array(
+				array(
+					'taxonomy' => 'brochure-editions',
+					'field' => 'slug',
+					'terms' => $brochure
+				)
+			);
+		}
 		
 		return new WP_Query( $args );
 	}

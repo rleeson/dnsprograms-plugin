@@ -1,18 +1,39 @@
 <?php
 /**
  * Class registers meta boxes used by this plugin on the post page
+ * 
+ * @since 1.1
+ * @package dnsprograms-plugins
  */
 if ( !class_exists( 'dns_meta_boxes' ) ) {
 	class dns_meta_boxes {
-		public static $calendar_nonce_prefix = 'program_calendar_style';
-		public static $details_nonce_prefix = 'program_details_style';
+		private static $calendar_nonce_prefix		= 'program_calendar_style';
+		private static $details_nonce_prefix		= 'program_details_style';
+		private static $edit_screen_user_options	= 'manageedit-postcolumnshidden';
+		private static $hide_columns_user_option	= 'dns-hide-custom-columns';
+		private static $print_custom_column_nonce	= true;
 		
 		public function __construct() {
+			// Register save and meta boxes
 			add_action( 'admin_init', array( $this, 'save_post_handlers' ) );
 			add_action( 'add_meta_boxes', array( $this, 'add_admin_boxes' ) );
+				
+			// Limit program description character length
 			add_action( 'edit_form_after_editor', array( $this, 'edit_form_character_count' ) );
+			
+			// Add Quick Edit functionality
+			add_filter( 'manage_edit-post_columns', array( $this, 'edit_posts_columns' ) );
+			add_action( 'manage_posts_custom_column', array( $this, 'list_program_columns' ), 10, 2 );
+			add_action( 'quick_edit_custom_box', array( $this, 'add_quick_edit' ) );
+			add_action( 'admin_print_scripts-edit.php', array( $this, 'quick_edit_scripts' ), 11 );
+				
+			// Hack to hide the extra program columns in the program listing by default
+			add_action( 'wp_login', array( $this, 'hide_edit_program_columns' ) );
 		}
 		
+		/**
+		 * Register program meta boxes
+		 */
 		public function add_admin_boxes() {
 			add_meta_box( 'dns-program-calendar-div', __( 'Program Calendar' ), 
 				array( $this, 'program_calendar_style' ), 'post', 'normal', 'high', 2 );
@@ -20,11 +41,202 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 				array( $this, 'program_details_style' ), 'post', 'normal', 'high', 1 );
 		}
 		
+		/**
+		 * Register post save routines
+		 */
 		public function save_post_handlers() {
 			add_action( 'save_post', array( $this, 'program_calendar_save' ) );
 			add_action( 'save_post', array( $this, 'program_details_save' ) );
 		}
+				
+		/**
+		 * Register Quick Edit JS in footer
+		 */
+		function quick_edit_scripts( ) {
+			if ( 'post' == get_query_var( 'post_type' ) ) {
+				wp_enqueue_script( 'dns-quick-edit', plugins_url( '../js/dns-quick-edit.js', __FILE__ ), array(), 
+					DNS_PROGRAM_PLUGIN_VERSION, true );
+			}
+		}
 		
+		/******************************
+		 * Quick Edit Functionality
+		 ******************************/
+		
+		/**
+		 * Handler to insert new Quick Edit fields
+		 * 
+		 * @param string $column_name Column Slug
+		 * @param string $post_type Current post type
+		 */
+		public function add_quick_edit( $column_name ) {
+		    if ( self::$print_custom_column_nonce ) {
+		    	wp_nonce_field( 'dns-quick-edit-program', 'dns-quick-edit-program_nonce' );
+				printf( '<fieldset class="inline-edit-col-right inline-edit-col-program">' );
+				printf( '<legend>Program Number & Prices</legend>' );
+				self::$print_custom_column_nonce = false;
+		    }
+		    
+		    // Depends on the column order set in edit_post_columns to properly wrap
+		    if ( $column_name == 'dns_start_date' ) {
+				printf( '</fieldset>');
+				printf( '<fieldset class="inline-edit-col-left inline-edit-col-program">' );
+				printf( '<legend>Program Date/Time</legend>' );
+			}
+			if ( $column_name == 'dns_frequency' ) {
+				printf( '</fieldset>');
+				printf( '<fieldset class="inline-edit-col-center inline-edit-col-program">' );
+				printf( '<legend>Program Calendar Control</legend>' );
+			}
+			
+		    $label	= '';
+			$type	= 'text';
+			$class	= '';
+			switch ( $column_name ) {
+				case 'dns_program_number':
+					$label = 'Program Number';
+					$class = 'class="required"';
+				break;
+				case 'dns_price_adult':
+					$label = 'Adult ($)';
+				break;
+				case 'dns_mem_price_adult':
+					$label = 'Member Adult ($)';
+				break;
+				case 'dns_price_child':
+					$label = 'Child ($)';
+				break;
+				case 'dns_mem_price_child':
+					$label = 'Member Child ($)';
+				break;
+				case 'dns_start_date':
+					$label = 'Start Date';
+					$class = 'class="required"';
+				break;
+				case 'dns_end_date':
+					$label = 'End Date';
+					$class = 'class="required"';
+				break;
+				case 'dns_start_time':
+					$label = 'Start Time';
+					$class = 'class="required"';
+				break;
+				case 'dns_end_time':
+					$label = 'End Time';
+					$class = 'class="required"';
+				break;
+				case 'dns_frequency':
+					$label = 'Frequency';
+				break;
+				case 'dns_days_week':
+					$label = 'Days of Week';
+				break;
+				case 'dns_day_month':
+					$label = 'Day of Month';
+				break;
+			}
+
+			// Print out text inputs
+			if ( !empty( $label ) && $type == 'text' ) {
+				printf( '<label class="inline-edit-%s" for="%s">', $column_name, $column_name );
+				printf( '<span class="title">%s</span><input name="%s" type="text" %s /></label>', $label, $column_name, $class );
+			}
+			
+			// Depends on 'dns_day_month' being set last in edit_posts_columns array
+			if ( $column_name == 'dns_day_month' ) {
+				printf( '</fieldset>' );
+			}
+		}
+		
+		/**
+		 * Handler to modify the WP_List_Table column array
+		 * 
+		 * @param array $columns Original column array
+		 * @return array Updated column array
+		 */
+		public function edit_posts_columns( $columns ) {
+			$new_columns = array(
+				'dns_program_number'	=> __( 'Program Number', 'dnsprograms-plugins' ),
+				'dns_price_adult'		=> __( 'Adult ($)', 'dnsprograms-plugins' ),
+				'dns_mem_price_adult'	=> __( 'Member Adult ($)', 'dnsprograms-plugins' ),
+				'dns_price_child'		=> __( 'Child ($)', 'dnsprograms-plugins' ),
+				'dns_mem_price_child'	=> __( 'Member Child ($)', 'dnsprograms-plugins' ),
+				'dns_start_date'		=> __( 'Start Date', 'dnsprograms-plugins' ),
+				'dns_end_date'			=> __( 'End Date', 'dnsprograms-plugins' ),
+				'dns_start_time'		=> __( 'Start Time', 'dnsprograms-plugins' ),
+				'dns_end_time'			=> __( 'End Time', 'dnsprograms-plugins' ),
+				'dns_frequency'			=> __( 'Frequency', 'dnsprograms-plugins' ),
+				'dns_days_week'			=> __( 'Days of Week', 'dnsprograms-plugins' ),
+				'dns_day_month'			=> __( 'Day of Month', 'dnsprograms-plugins' ),
+			);
+			return array_merge( $columns, $new_columns );
+		}
+		
+		/**
+		 * Create a one-shot login event to suppress the new Meta boxes created from column listings
+		 * Doing it in this manner defaults to columns to off for each user, and allows them to turn on
+		 * the columns without plugin interference
+		 * 
+		 * @param integer $user_id User Identifier
+		 */
+		public function hide_edit_program_columns( $user ) {
+			// Retrieve the current users ID
+			$user_id = get_user_by( 'login', $user );
+						
+			$hidden_oneshot = get_user_meta( $user_id, self::$hide_columns_user_option, true );
+			
+			if ( !$hidden_oneshot ) {
+				// Get the hidden columns on the edit-post screen, default to empty array if non set
+				$hidden_columns = get_user_meta( $user_id, self::$edit_screen_user_options, true );	
+				if ( !is_array( $hidden_columns ) ) {
+					$hidden_columns = array();
+				}
+					
+				// List of new columns to hide
+				$new_hidden_columns = array( 
+					'dns_program_number',
+					'dns_price_adult',
+					'dns_mem_price_adult',
+					'dns_price_child',
+					'dns_mem_price_child',
+					'dns_start_date', 
+					'dns_end_date', 
+					'dns_start_time', 
+					'dns_end_time',
+					'dns_frequency', 
+					'dns_days_week', 
+					'dns_day_month' 
+				);
+		
+				// Merge and prune duplicates
+				$update_hidden = array_filter( array_unique( array_merge( $new_hidden_columns, $hidden_columns ) ) );
+
+				// Update user settings
+				$success = update_user_meta( $user_id, self::$edit_screen_user_options, $update_hidden );
+				if ( $success ) {
+					update_user_meta( $user_id, self::$hide_columns_user_option, true );
+				}
+			}
+		}
+		
+		/**
+		 * Display the values of each column in the WP_List_Table
+		 * @param unknown $column_name
+		 * @param unknown $post_id
+		 */
+		function list_program_columns( $column_name, $post_id ) {
+			switch ( $column_name ) {
+				default:
+					// Check !! means translate the following item to a boolean value
+					$text = get_post_meta( $post_id , $column_name , true );
+					echo $text;
+				break;
+			}
+		}
+				
+		/**
+		 * Register a message showing the program description character limit
+		 */
 		public function edit_form_character_count() { ?>
 			<div id="edit-character-count">Character Count: 
 				<span class="character-count">-</span> 
@@ -32,6 +244,10 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 			</div>
 		<?php
 		}
+		
+		/*******************************
+		 * Standard Edit Funcitonality
+		 *******************************/
 		
 		/**
 		 * Display the Program Calendar box
@@ -129,54 +345,6 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 		}
 		
 		/**
-		 * Save handler for the Program Calendar information
-		 * @param int $post_id Post ID
-		 * @return number Post ID
-		 */
-		public function program_calendar_save( $post_id ) {
-			// Run security check for this save attempt
-			if ( false === $this->security_check( $post_id, self::$calendar_nonce_prefix ) ) {
-				return $post_id;
-			}
-			
-			// Verify and save the calendar start and end dates and times
-			$this->field_updater( $post_id, 'dns_start_date', DATE_FORMAT );
-			$this->field_updater( $post_id, 'dns_end_date', DATE_FORMAT );
-			$this->field_updater( $post_id, 'dns_start_time' );
-			$this->field_updater( $post_id, 'dns_end_time' );
-			
-			// Validate and save the date schedule, reseting any inactive schedules
-			$frequency = $this->field_updater( $post_id, 'dns_frequency', '/[0-2]/', '', 'intval' );
-			$dow_array = array();
-			$dom = 0;
-			switch ( $frequency ) {
-				// Saving Weekly schedules
-				case 1:
-					$input_array = $_POST[ 'dns_days_week' ];
-					if ( is_array( $input_array ) ) {
-						foreach ( $input_array as $day ) {
-							$in_day = intval( $day );
-							
-							// Verify the value isn't a duplicate and is a day value between 1 and 7
-							if ( !array_search( $in_day, $dow_array ) && $in_day > 0 && $in_day < 8  ) {
-								$dow_array[] = $in_day;
-							}
-						}
-					}
-					break;
-				// Saving Monthly schedules
-				case '2':
-					$dom = intval( $_POST[ 'dns_day_month' ] );
-					break;
-				default:
-					break;
-			}
-			
-			update_post_meta( $post_id, 'dns_days_week', $dow_array );
-			update_post_meta( $post_id, 'dns_day_month', $dom );				
-		}
-		
-		/**
 		 * Display the Program Details box
 		 * @param WP_Post $post Post object
 		 */
@@ -251,7 +419,60 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 			</ul>
 			<?php 
 		}
+		
+		/*****************
+		 * Save Routines
+		 *****************/
 
+		/**
+		 * Save handler for the Program Calendar information
+		 * @param int $post_id Post ID
+		 * @return number Post ID
+		 */
+		public function program_calendar_save( $post_id ) {
+			// Run security check for this save attempt
+			if ( false === $this->security_check( $post_id, self::$calendar_nonce_prefix ) &&
+					false === $this->security_check( $post_id, 'dns-quick-edit-program' ) ) {
+				return $post_id;
+			}
+				
+			// Verify and save the calendar start and end dates and times
+			$this->field_updater( $post_id, 'dns_start_date', DATE_FORMAT );
+			$this->field_updater( $post_id, 'dns_end_date', DATE_FORMAT );
+			$this->field_updater( $post_id, 'dns_start_time' );
+			$this->field_updater( $post_id, 'dns_end_time' );
+				
+			// Validate and save the date schedule, reseting any inactive schedules
+			$frequency = $this->field_updater( $post_id, 'dns_frequency', '/[0-2]/', '', 'intval' );
+			$dow_array = array();
+			$dom = 0;
+			switch ( $frequency ) {
+				// Saving Weekly schedules
+				case 1:
+					$input_array = $_POST[ 'dns_days_week' ];
+					if ( is_array( $input_array ) ) {
+						foreach ( $input_array as $day ) {
+							$in_day = intval( $day );
+								
+							// Verify the value isn't a duplicate and is a day value between 1 and 7
+							if ( !array_search( $in_day, $dow_array ) && $in_day > 0 && $in_day < 8  ) {
+								$dow_array[] = $in_day;
+							}
+						}
+					}
+					break;
+					// Saving Monthly schedules
+				case '2':
+					$dom = intval( $_POST[ 'dns_day_month' ] );
+					break;
+				default:
+					break;
+			}
+				
+			update_post_meta( $post_id, 'dns_days_week', $dow_array );
+			update_post_meta( $post_id, 'dns_day_month', $dom );
+		}
+		
 		/**
 		 * Save handler for the Program Details information
 		 * @param int $post_id Post ID
@@ -259,7 +480,8 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 		 */
 		public function program_details_save( $post_id ) {
 			// Run security check for this save attempt
-			if ( false === $this->security_check( $post_id, self::$details_nonce_prefix ) ) {
+			if ( false === $this->security_check( $post_id, self::$details_nonce_prefix ) &&
+					false === $this->security_check( $post_id, 'dns-quick-edit-program' ) ) {
 				return $post_id;
 			}
 			

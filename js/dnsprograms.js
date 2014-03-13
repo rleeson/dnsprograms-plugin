@@ -37,18 +37,59 @@ jQuery(document).ready(function() {
 	setInterval(function() { 
 		editor_character_count(); 
 	}, 5000);
-	
+
 	// Initialize calendar date/time pickers
-	jQuery('#dns_start_date').datepicker();
-	jQuery('#dns_end_date').datepicker();
-	jQuery('#dns_start_time').timepicker({'timeFormat':'h:i A'});
-	jQuery('#dns_end_time').timepicker({'timeFormat':'h:i A'});
+	jQuery('input[name="dns_start_date"]').datepicker({ 
+		autoSize: true,
+		changeMonth: true,
+		closeText: 'Close',
+		dateFormat: 'mm/dd/yy',
+		onClose: function(dateText, inst){
+			console.log(jQuery(this));
+			// Ensures the entered text matches the requested format
+			var field_id = jQuery(this).attr('id');
+			var field_date = jQuery(this).datepicker('getDate');
+			
+			if ( field_date ) {
+				var field_date = jQuery.datepicker.formatDate( 'mm/dd/yy', field_date );
+			}
+			else {
+				// Clears the input on empty date
+				field_date = '';
+			}
+			jQuery('#' + field_id).val(field_date);
+		},
+		showButtonPanel: true
+	});
+	jQuery('input[name="dns_end_date"]').datepicker({
+		autoSize: true,
+		changeMonth: true,
+		closeText: 'Close',
+		dateFormat: 'mm/dd/yy',
+		onClose: function(dateText, inst){
+			// Ensures the entered text matches the requested format
+			var field_id = jQuery(this).attr('id');
+			var field_date = jQuery(this).datepicker('getDate');
+			
+			if ( field_date ) {
+				var field_date = jQuery.datepicker.formatDate( 'mm/dd/yy', field_date );
+			}
+			else {
+				// Clears the input on empty date
+				field_date = '';
+			}
+			jQuery('#' + field_id).val(field_date);
+		},
+		showButtonPanel: true
+	});
+	jQuery('input[name="dns_start_time"]').timepicker({'timeFormat':'h:i A'});
+	jQuery('input[name="dns_end_time"]').timepicker({'timeFormat':'h:i A'});
 	
 	// Initialize price field disable functionality
-	enableCheck('input#dns_pa_enable','input[name="dns_price_adult"]');
-	enableCheck('input#dns_pc_enable','input[name="dns_price_child"]');
-	enableCheck('input#dns_mpa_enable','input[name="dns_mem_price_adult"]');
-	enableCheck('input#dns_mpc_enable','input[name="dns_mem_price_child"]');
+	enableCheck('input[name="dns_pa_enable"]','input[name="dns_price_adult"]');
+	enableCheck('input[name="dns_pc_enable"]','input[name="dns_price_child"]');
+	enableCheck('input[name="dns_mpa_enable"]','input[name="dns_mem_price_adult"]');
+	enableCheck('input[name="dns_mpc_enable"]','input[name="dns_mem_price_child"]');
 	
 	jQuery('input[name="dns_frequency"]:radio').change(function() {
 		var check_val = parseInt(jQuery('input[name="dns_frequency"]:checked').val());
@@ -105,10 +146,25 @@ jQuery(document).ready(function() {
 		} 
 	});
 	
+	// Special post validation rules using the jQuery Validate plugin
+	jQuery('#posts-filter').validate({
+		rules: {
+			dns_start_date: { datecompare: 'true' },
+		},
+		messages: {
+		},
+		submitHandler: function(form) {
+				form.submit();
+		},
+		invalidHandler: function() { 
+			jQuery('#publish').removeClass('button-primary-disabled'); 
+			jQuery('.spinner').css('visibility', 'hidden'); 
+		} 
+	});
+	
 	jQuery('#save-post').click(function(){
 		jQuery('#post').validate().cancelSubmit = true;		
 	});
-
 });
 
 function enableCheck($enable,$field) {
@@ -132,11 +188,11 @@ jQuery.validator.addMethod( 'teachers_required', function ( value ) {
 jQuery.validator.addMethod( 'datecompare', function( value ) {
 	datematch = '^((0?[1-9]|1[012])[- /.](0?[1-9]|[12][0-9]|3[01])[- /.](19|20)?[0-9]{2})*$';
 	timematch = '^((0?[1-9]|1[012]):[0-5][0-9] (A|P)M)$';
-	start = jQuery( '#dns_start_date' ).val().trim();
-	start_time = jQuery('#dns_start_time').val().trim();
-	end = jQuery( '#dns_end_date' ).val().trim();
-	end_time = jQuery('#dns_end_time').val().trim();
-	
+	start = jQuery( 'input[name="dns_start_date"]' ).val().trim();
+	start_time = jQuery('input[name="dns_start_time"]').val().trim();
+	end = jQuery( 'input[name="dns_end_date"]' ).val().trim();
+	end_time = jQuery('input[name="dns_end_time"]').val().trim();
+
 	// Validate correct date format
 	if ( !start.match(datematch) || !end.match(datematch) ) {
 		return false;
