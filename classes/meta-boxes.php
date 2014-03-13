@@ -69,7 +69,7 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 		 * @param string $column_name Column Slug
 		 * @param string $post_type Current post type
 		 */
-		public function add_quick_edit( $column_name, $post_type ) {
+		public function add_quick_edit( $column_name ) {
 		    if ( self::$print_custom_column_nonce ) {
 		    	wp_nonce_field( 'dns-quick-edit-program', 'dns-quick-edit-program_nonce' );
 				printf( '<fieldset class="inline-edit-col-right inline-edit-col-program">' );
