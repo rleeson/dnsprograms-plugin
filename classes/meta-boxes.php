@@ -139,8 +139,7 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 			// Print out text inputs
 			if ( !empty( $label ) && $type == 'text' ) {
 				printf( '<label class="inline-edit-%s" for="%s">', $column_name, $column_name );
-				printf( '<span class="title">%s</span><input id="%s" name="%s" type="text" %s /></label>', $label, $column_name, 
-					$column_name, $class );
+				printf( '<span class="title">%s</span><input name="%s" type="text" %s /></label>', $label, $column_name, $class );
 			}
 			
 			// Depends on 'dns_day_month' being set last in edit_posts_columns array

@@ -147,4 +147,6 @@ input[name="dns_price_details"] {
 	width: 100px;
 }
 
-
+#wpbody-content .inline-editor fieldset.inline-edit-col-center.inline-edit-col-program {
+	display: none;
+}
