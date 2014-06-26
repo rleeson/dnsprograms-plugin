@@ -30,7 +30,8 @@ class dns_program_admin {
 			'childprice' 		=> 0, 
 			'memberprice' 		=> 0, 
 			'memberchildprice' 	=> 0, 
-			'pricedetails' 		=> 0 
+			'pricedetails' 		=> 0,
+			'maxparticipants'	=> 0, 
 		);
 		
 		// Process the file upload on form submission
@@ -63,8 +64,16 @@ class dns_program_admin {
 								if ( preg_match( DNS_PROGRAM_NUMBER_FORMAT, $program_number ) ) {
 									update_post_meta( $post_id, 'dns_program_number', $program_number );
 								}
-								elseif ( empty( $program_number) ) {
+								elseif ( empty( $program_number ) ) {
 									update_post_meta( $post_id, 'dns_program_number', '' );
+								}
+								
+								$max_participants = trim( $data[ $key_array[ 'maxparticipants' ] ] );
+								if ( is_numeric( $max_participants ) && intval( $max_participants ) > 0 ) {
+									update_post_meta( $post_id, 'dns_max_participants', intval( $max_participants ) );
+								}
+								elseif ( empty( $max_participants ) ) {
+									update_post_meta( $post_id, 'dns_max_participants', '' );
 								}
 								
 								$price_adult = trim( $data[ $key_array[ 'price' ] ], '$' );
@@ -244,7 +253,7 @@ class dns_program_admin {
 		$fh = @fopen( 'php://output', 'w' );
 		$header_array = array( 'postid', 'status', 'title', 'description', 'author', 'programnumber', 'categories', 'brochureeditions', 'ages', 
 				'teachers', 'locations', 'series', 'frequency', 'startdate', 'enddate', 'starttime', 'endtime', 'daysofweek', 
-				'dayofmonth', 'nextdate', 'price', 'childprice', 'memberprice', 'memberchildprice', 'pricedetails'
+				'dayofmonth', 'nextdate', 'price', 'childprice', 'memberprice', 'memberchildprice', 'pricedetails', 'maxparticipants'
 		 );
 		fputcsv( $fh, $header_array );
 		
@@ -314,6 +323,7 @@ class dns_program_admin {
 		$row[ 'memberprice' ] 		= get_post_meta( $pid, 'dns_mem_price_adult', true );
 		$row[ 'memberchildprice' ] 	= get_post_meta( $pid, 'dns_mem_price_child', true );
 		$row[ 'pricedetails' ] 		= get_post_meta( $pid, 'dns_price_details', true );
+		$row[ 'maxparticipants' ] 	= get_post_meta( $pid, 'dns_max_participants', true );
 		return $row;
 	}
 	
