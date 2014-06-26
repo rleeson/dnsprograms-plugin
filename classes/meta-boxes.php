@@ -427,7 +427,7 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 				<li>Check an age range to enable it</li>
 				<li>For a Free age range, check and enter 0</li>
 				<li>Enter amounts in dollars and cents, $ signs are not needed.</li>
-				<li>Leave the Maximum Participants field empty if there is no limit.</li>
+				<li>Leave the Maximum Participants field empty if there is no limit.  Any decimal points will be rounded down.</li>
 			</ul>
 			<?php 
 		}
@@ -519,7 +519,7 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 			
 			if( !empty( $max_participants ) ) {
 				if ( is_numeric( $max_participants ) && intval( $max_participants ) > 0 ) {
-					update_post_meta( $post_id, 'dns_max_participants', $max_participants );
+					update_post_meta( $post_id, 'dns_max_participants', intval( $max_participants ) );
 				}
 			}
 			
