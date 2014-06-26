@@ -109,6 +109,9 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 				case 'dns_mem_price_child':
 					$label = 'Member Child ($)';
 				break;
+				case 'dns_max_participants':
+					$label = 'Maximum Participants';
+				break;
 				case 'dns_start_date':
 					$label = 'Start Date';
 					$class = 'class="required"';
@@ -161,6 +164,7 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 				'dns_mem_price_adult'	=> __( 'Member Adult ($)', 'dnsprograms-plugins' ),
 				'dns_price_child'		=> __( 'Child ($)', 'dnsprograms-plugins' ),
 				'dns_mem_price_child'	=> __( 'Member Child ($)', 'dnsprograms-plugins' ),
+				'dns_max_participants'	=> __( 'Maximum Participants', 'dnsprograms-plugins' ),
 				'dns_start_date'		=> __( 'Start Date', 'dnsprograms-plugins' ),
 				'dns_end_date'			=> __( 'End Date', 'dnsprograms-plugins' ),
 				'dns_start_time'		=> __( 'Start Time', 'dnsprograms-plugins' ),
@@ -199,6 +203,7 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 					'dns_mem_price_adult',
 					'dns_price_child',
 					'dns_mem_price_child',
+					'dns_max_participants',
 					'dns_start_date', 
 					'dns_end_date', 
 					'dns_start_time', 
@@ -351,6 +356,7 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 		public function program_details_style( $post ) {
 			$settings = array( 
 				'dns_program_number'	=> '',
+				'dns_max_participants'	=> '',
 				'dns_pa_enable'			=> false,
 				'dns_pc_enable'			=> false,
 				'dns_price_child'		=> '',
@@ -408,6 +414,11 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 					<?php disabled( $settings[ 'dns_mpc_enable' ], false )?> />
 			</div>
 			<div class="setting">
+				<label for="dns_max_participants">Maximum Participants</label>
+				<input type="text" name="dns_max_participants"
+					value="<?php echo esc_html__( $settings[ 'dns_max_participants' ] ); ?>" />
+			</div>
+			<div class="setting">
 				<label for="dns_price_details">More Price Details</label>
 				<input type="text" name="dns_price_details" 
 					value="<?php echo esc_html__( $settings[ 'dns_price_details' ] ) ; ?>" />
@@ -416,6 +427,7 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 				<li>Check an age range to enable it</li>
 				<li>For a Free age range, check and enter 0</li>
 				<li>Enter amounts in dollars and cents, $ signs are not needed.</li>
+				<li>Leave the Maximum Participants field empty if there is no limit.</li>
 			</ul>
 			<?php 
 		}
@@ -501,6 +513,14 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 			foreach ( $field_array as $field_index ) {
 				$this->field_updater( $post_id, $field_index, CURRENCY_FORMAT, '$', 
 					array( $this, 'currency_format') );
+			}
+			
+			$max_participants = $_POST[ 'dns_max_participants' ];
+			
+			if( !empty( $max_participants ) ) {
+				if ( is_numeric( $max_participants ) && intval( $max_participants ) > 0 ) {
+					update_post_meta( $post_id, 'dns_max_participants', $max_participants );
+				}
 			}
 			
 			update_post_meta( $post_id, 'dns_price_details', 
