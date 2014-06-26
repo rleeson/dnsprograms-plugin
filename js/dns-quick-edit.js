@@ -25,6 +25,7 @@
 								'dns_mem_price_adult',
 								'dns_price_child',
 								'dns_mem_price_child',
+								'dns_max_participants',
 								'dns_start_date', 
 								'dns_end_date', 
 								'dns_start_time', 
