@@ -2,7 +2,7 @@
 /**
  * Class registers meta boxes used by this plugin on the post page
  * 
- * @since 1.1
+ * @since 1.2
  * @package dnsprograms-plugins
  */
 if ( !class_exists( 'dns_meta_boxes' ) ) {
