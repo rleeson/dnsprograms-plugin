@@ -503,8 +503,8 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 					array( $this, 'currency_format') );
 			}
 			
-			update_post_meta( $post_id, 'dns-price-details', 
-				sanitize_text_field( $_POST[ 'dns-price-details']));
+			update_post_meta( $post_id, 'dns_price_details', 
+				sanitize_text_field( $_POST[ 'dns_price_details' ] ) );
 			
 			// Save price enables values
 			$enable_array = array( 'dns_pa_enable', 'dns_pc_enable', 'dns_mpa_enable', 'dns_mpc_enable' );
