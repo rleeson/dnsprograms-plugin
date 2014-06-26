@@ -15,7 +15,7 @@ require_once 'classes/taxonomies.php';
 define( 'CURRENCY_FORMAT', '/\b\d{1,3}(?:,?\d{3})*(?:\.\d{2})?\b/' );
 define( 'DATE_FORMAT', '/^((0?[1-9]|1[012])[- \/\.](0?[1-9]|[12][0-9]|3[01])[- \/\.](19|20)?[0-9]{2})*$/' );
 define( 'DNS_PROGRAM_CHARACTER_LIMIT', 500 );
-define( 'DNS_PROGRAM_NUMBER_FORMAT', '/^[a-zA-Z0-9]{3}-[a-zA-Z0-9]{3}-[a-zA-Z0-9]{2}$/' );
+define( 'DNS_PROGRAM_NUMBER_FORMAT', '/^[a-zA-Z0-9]{3}-?[a-zA-Z0-9]{3}-?[a-zA-Z0-9]{2}$/' );
 define( 'DNS_PROGRAM_PLUGIN_VERSION', '1.1' );
 
 function dns_enqueue_scripts() {
