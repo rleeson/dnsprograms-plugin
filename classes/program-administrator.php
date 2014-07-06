@@ -27,9 +27,7 @@ class dns_program_admin {
 			'postid'			=> 0,
 			'programnumber' 	=> 0, 
 			'price' 			=> 0, 
-			'childprice' 		=> 0, 
 			'memberprice' 		=> 0, 
-			'memberchildprice' 	=> 0, 
 			'pricedetails' 		=> 0,
 			'maxparticipants'	=> 0, 
 		);
@@ -76,66 +74,35 @@ class dns_program_admin {
 									update_post_meta( $post_id, 'dns_max_participants', '' );
 								}
 								
-								$price_adult = trim( $data[ $key_array[ 'price' ] ], '$' );
-								if ( preg_match( CURRENCY_FORMAT, $price_adult ) ) {
-									update_post_meta( $post_id, 'dns_price_adult', number_format( floatval( $price_adult ), 2 ) );
-								if ( floatval( $price_adult ) == 0 ) {
+								$price = trim( $data[ $key_array[ 'price' ] ], '$' );
+								if ( preg_match( CURRENCY_FORMAT, $price ) ) {
+									update_post_meta( $post_id, 'dns_price_adult', number_format( floatval( $price ), 2 ) );
+								if ( floatval( $price ) == 0 ) {
 										update_post_meta( $post_id, 'dns_pa_enable', '' );
 									}
 									else {
 										update_post_meta( $post_id, 'dns_pa_enable', 'on' );
 									}									
 								}
-								elseif ( empty( $price_adult ) ) {
+								elseif ( empty( $price ) ) {
 									update_post_meta( $post_id, 'dns_price_adult', '0' );
 									update_post_meta( $post_id, 'dns_pa_enable', '' );
 								}
-								
-								$price_child = trim( $data[ $key_array[ 'childprice' ] ], '$' );
-								if ( preg_match( CURRENCY_FORMAT, $price_child ) ) {
-									update_post_meta( $post_id, 'dns_price_child', number_format( floatval( $price_child ), 2 ) );
-									if ( floatval( $price_child ) == 0 ) {
-										update_post_meta( $post_id, 'dns_pc_enable', '' );
-									}
-									else {
-										update_post_meta( $post_id, 'dns_pc_enable', 'on' );
-									}									
-								}
-								elseif ( empty( $price_child ) ) {
-									update_post_meta( $post_id, 'dns_price_child', '0' );
-									update_post_meta( $post_id, 'dns_pc_enable', '' );
-								}
-								
-								$mem_price_adult = trim( $data[ $key_array[ 'memberprice' ] ], '$' );
-								if ( preg_match( CURRENCY_FORMAT, $mem_price_adult ) ) {
-									update_post_meta( $post_id, 'dns_mem_price_adult', number_format( floatval( $mem_price_adult ), 2 ) );
-									if (  floatval( $mem_price_adult ) == 0 ) {
+																
+								$member_price = trim( $data[ $key_array[ 'memberprice' ] ], '$' );
+								if ( preg_match( CURRENCY_FORMAT, $member_price ) ) {
+									update_post_meta( $post_id, 'dns_mem_price_adult', number_format( floatval( $member_price ), 2 ) );
+									if (  floatval( $member_price ) == 0 ) {
 										update_post_meta( $post_id, 'dns_mpa_enable', '' );
 									}
 									else {
 										update_post_meta( $post_id, 'dns_mpa_enable', 'on' );
 									}
 																	}
-								elseif ( empty( $mem_price_adult ) ) {
+								elseif ( empty( $member_price ) ) {
 									update_post_meta( $post_id, 'dns_mem_price_adult', '0' );
 									update_post_meta( $post_id, 'dns_mpa_enable', '' );
-								}
-								
-								$mem_price_child = trim( $data[ $key_array[ 'memberchildprice' ] ], '$' );
-								if ( preg_match( CURRENCY_FORMAT, $mem_price_child ) ) {
-									update_post_meta( $post_id, 'dns_mem_price_child', number_format( floatval( $mem_price_child ), 2 ) );
-									if ( floatval( $mem_price_child ) == 0 ) {
-										update_post_meta( $post_id, 'dns_mpc_enable', '' );
-									}
-									else {
-										update_post_meta( $post_id, 'dns_mpc_enable', 'on' );
-									}
-								}
-								elseif ( empty( $mem_price_child ) ) {
-									update_post_meta( $post_id, 'dns_mem_price_child', '0' );
-									update_post_meta( $post_id, 'dns_mpc_enable', '' );
-								}
-								
+								}	
 							}
 							// Skip an unlisted program id
 							else {
@@ -253,7 +220,7 @@ class dns_program_admin {
 		$fh = @fopen( 'php://output', 'w' );
 		$header_array = array( 'postid', 'status', 'title', 'description', 'author', 'programnumber', 'categories', 'brochureeditions', 'ages', 
 				'teachers', 'locations', 'series', 'frequency', 'startdate', 'enddate', 'starttime', 'endtime', 'daysofweek', 
-				'dayofmonth', 'nextdate', 'price', 'childprice', 'memberprice', 'memberchildprice', 'pricedetails', 'maxparticipants'
+				'dayofmonth', 'nextdate', 'price', 'memberprice', 'pricedetails', 'maxparticipants'
 		 );
 		fputcsv( $fh, $header_array );
 		
@@ -319,9 +286,7 @@ class dns_program_admin {
 		$row[ 'dayofmonth' ] 		= get_post_meta( $pid, 'dns_day_month', true );
 		$row[ 'nextdate' ] 			= $this->get_next_date( $row );
 		$row[ 'price' ] 			= get_post_meta( $pid, 'dns_price_adult', true );
-		$row[ 'childprice' ] 		= get_post_meta( $pid, 'dns_price_child', true );
 		$row[ 'memberprice' ] 		= get_post_meta( $pid, 'dns_mem_price_adult', true );
-		$row[ 'memberchildprice' ] 	= get_post_meta( $pid, 'dns_mem_price_child', true );
 		$row[ 'pricedetails' ] 		= get_post_meta( $pid, 'dns_price_details', true );
 		$row[ 'maxparticipants' ] 	= get_post_meta( $pid, 'dns_max_participants', true );
 		return $row;

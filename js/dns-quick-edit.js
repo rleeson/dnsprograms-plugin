@@ -23,8 +23,6 @@
 			var $text_fields = ['dns_program_number',
 								'dns_price_adult',
 								'dns_mem_price_adult',
-								'dns_price_child',
-								'dns_mem_price_child',
 								'dns_max_participants',
 								'dns_start_date', 
 								'dns_end_date', 
