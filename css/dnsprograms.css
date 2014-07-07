@@ -105,6 +105,11 @@ input[name="dns_price_details"] {
 	width: 87px;
 }
 
+#dns_date_details { 
+	width: 100%;
+	margin-bottom: 10px;
+}
+
 .notice {
     background-color: #333;
     border: 1px solid #999;

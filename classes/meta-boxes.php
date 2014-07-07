@@ -269,7 +269,7 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 					<span class="character-count">-</span> 
 					<span class="character-limit"> (Maximum Allowed: <?php echo DNS_PROGRAM_TITLE_LIMIT; ?>)</span>
 				</div>
-				<div id="edit-character-count">Editor Character Count: 
+				<div id="edit-character-count">Description Character Count: 
 					<span class="character-count">-</span> 
 					<span class="character-limit"> (Maximum Allowed: <?php echo DNS_PROGRAM_CHARACTER_LIMIT; ?>)</span>
 				</div>
@@ -293,7 +293,8 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 				'dns_end_time'				=> '',
 				'dns_frequency'				=> 0,
 				'dns_days_week'				=> array(),
-				'dns_day_month'				=> 0
+				'dns_day_month'				=> 0,
+				'dns_date_details'			=> ''
 			);
 			foreach( $settings as $key => $value ) {
 				$post_meta = get_post_meta( $post->ID, $key, true );
@@ -372,6 +373,12 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 				</div>
 				<div class="notice group"><strong>Note:</strong> If the date falls after the end of a month, 
 					the last day of that month will be selected</div>
+			</div>
+			<div class="setting">
+				<label for="dns_date_details">Date Details</label>
+				<input type="text" id="dns_date_details" name="dns_date_details"
+					value="<?php echo esc_html__( $settings[ 'dns_date_details' ] ); ?>" />
+				<div class="notice group"><strong>Note:</strong> Date details is a free form field, no validation.</div>
 			</div>
 			<?php
 		}
@@ -490,6 +497,8 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 				
 			update_post_meta( $post_id, 'dns_days_week', $dow_array );
 			update_post_meta( $post_id, 'dns_day_month', $dom );
+			update_post_meta( $post_id, 'dns_date_details', 
+				sanitize_text_field( $_POST[ 'dns_date_details' ] ) );
 		}
 		
 		/**

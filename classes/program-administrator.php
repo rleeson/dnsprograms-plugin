@@ -1,5 +1,10 @@
 <?php
-
+/**
+ * Functionality to import/export Program data using a CSV
+ * 
+ * @since 1.3
+ * @package dnsprograms-plugins
+ */
 class dns_program_admin {
 	public function __construct() {
 		add_action( 'admin_init', array( $this, 'export_csv_handler' ) );
@@ -19,17 +24,21 @@ class dns_program_admin {
 	/****************************************
 	 * Import Functionality					*
 	****************************************/
-	
+
+	/** 
+	 * Import form and routine to process CSV files to update program data
+	 */
 	public function update_csv_callback() {
 		global $pagenow;
 		
+		// Default column index array
 		$key_array = array( 
-			'postid'			=> 0,
-			'programnumber' 	=> 0, 
-			'price' 			=> 0, 
-			'memberprice' 		=> 0, 
-			'pricedetails' 		=> 0,
-			'maxparticipants'	=> 0, 
+			'postid'			=> -1,
+			'programnumber' 	=> -1, 
+			'price' 			=> -1, 
+			'memberprice' 		=> -1, 
+			'pricedetails' 		=> -1,
+			'maxparticipants'	=> -1, 
 		);
 		
 		// Process the file upload on form submission
@@ -40,7 +49,7 @@ class dns_program_admin {
 				if ( ( $handle = fopen( $upload_file[ 'file' ], 'r' ) ) !== FALSE ) {
 					$file_marker = array( 'row' => 0, 'column' => 0 );
 					while ( ( $data = fgetcsv( $handle, 2048, ',' ) ) !== FALSE ) {
-						// Determine the column each column of data defined in the key array is stored
+						// Determine the column associated with each import field, stored in the key array
 						if ( $file_marker[ 'row' ] == 0 ) {
 							$file_marker[ 'column' ] = 0;
 							foreach ( $data as $label ) {
@@ -55,54 +64,71 @@ class dns_program_admin {
 							$post_id = $data[ $key_array[ 'postid' ] ];
 							$post = get_post( $post_id );
 							
-							// Process program data if it exists
+							// Process program data if it exists (non-negative key)
 							if ( !empty( $post ) ) {
-								// Update the program number, if valid overwrite, if blank empty, else leave alone
-								$program_number = trim( $data[ $key_array[ 'programnumber' ] ] );
-								if ( preg_match( DNS_PROGRAM_NUMBER_FORMAT, $program_number ) ) {
-									update_post_meta( $post_id, 'dns_program_number', $program_number );
-								}
-								elseif ( empty( $program_number ) ) {
-									update_post_meta( $post_id, 'dns_program_number', '' );
-								}
-								
-								$max_participants = trim( $data[ $key_array[ 'maxparticipants' ] ] );
-								if ( is_numeric( $max_participants ) && intval( $max_participants ) > 0 ) {
-									update_post_meta( $post_id, 'dns_max_participants', intval( $max_participants ) );
-								}
-								elseif ( empty( $max_participants ) ) {
-									update_post_meta( $post_id, 'dns_max_participants', '' );
+								// Program number, based on regex validation
+								if ( $key_array[ 'programnumber' ] >= 0 ) {
+									$program_number = trim( $data[ $key_array[ 'programnumber' ] ] );
+									if ( preg_match( DNS_PROGRAM_NUMBER_FORMAT, $program_number ) ) {
+										update_post_meta( $post_id, 'dns_program_number', $program_number );
+									}
+									elseif ( empty( $program_number ) ) {
+										update_post_meta( $post_id, 'dns_program_number', '' );
+									}
 								}
 								
-								$price = trim( $data[ $key_array[ 'price' ] ], '$' );
-								if ( preg_match( CURRENCY_FORMAT, $price ) ) {
-									update_post_meta( $post_id, 'dns_price_adult', number_format( floatval( $price ), 2 ) );
-								if ( floatval( $price ) == 0 ) {
+								// Maximum participants, any non-negative integer
+								if ( $key_array[ 'maxparticipants' ] >= 0 ) {
+									$max_participants = trim( $data[ $key_array[ 'maxparticipants' ] ] );
+									if ( is_numeric( $max_participants ) && intval( $max_participants ) >= 0 ) {
+										update_post_meta( $post_id, 'dns_max_participants', intval( $max_participants ) );
+									}
+									elseif ( empty( $max_participants ) ) {
+										update_post_meta( $post_id, 'dns_max_participants', '' );
+									}
+								}
+	
+								// Price details, any value
+								if ( $key_array[ 'pricedetails' ] >= 0 ) {
+									$price_details = trim( $data[ $key_array[ 'pricedetails' ] ] );
+									update_post_meta( $post_id, 'dns_price_details', intval( $price_details ) );
+								}
+									
+								// Standard program price, price regex match
+								if ( $key_array[ 'price' ] >= 0 ) {
+									$price = trim( $data[ $key_array[ 'price' ] ], '$' );
+									if ( preg_match( CURRENCY_FORMAT, $price ) ) {
+										update_post_meta( $post_id, 'dns_price_adult', number_format( floatval( $price ), 2 ) );
+									if ( floatval( $price ) == 0 ) {
+											update_post_meta( $post_id, 'dns_pa_enable', '' );
+										}
+										else {
+											update_post_meta( $post_id, 'dns_pa_enable', 'on' );
+										}									
+									}
+									elseif ( empty( $price ) ) {
+										update_post_meta( $post_id, 'dns_price_adult', '0' );
 										update_post_meta( $post_id, 'dns_pa_enable', '' );
 									}
-									else {
-										update_post_meta( $post_id, 'dns_pa_enable', 'on' );
-									}									
 								}
-								elseif ( empty( $price ) ) {
-									update_post_meta( $post_id, 'dns_price_adult', '0' );
-									update_post_meta( $post_id, 'dns_pa_enable', '' );
-								}
-																
-								$member_price = trim( $data[ $key_array[ 'memberprice' ] ], '$' );
-								if ( preg_match( CURRENCY_FORMAT, $member_price ) ) {
-									update_post_meta( $post_id, 'dns_mem_price_adult', number_format( floatval( $member_price ), 2 ) );
-									if (  floatval( $member_price ) == 0 ) {
+
+								// Memeber program price, price regex match
+								if ( $key_array[ 'memberprice' ] >= 0 ) {
+									$member_price = trim( $data[ $key_array[ 'memberprice' ] ], '$' );
+									if ( preg_match( CURRENCY_FORMAT, $member_price ) ) {
+										update_post_meta( $post_id, 'dns_mem_price_adult', number_format( floatval( $member_price ), 2 ) );
+										if (  floatval( $member_price ) == 0 ) {
+											update_post_meta( $post_id, 'dns_mpa_enable', '' );
+										}
+										else {
+											update_post_meta( $post_id, 'dns_mpa_enable', 'on' );
+										}
+																		}
+									elseif ( empty( $member_price ) ) {
+										update_post_meta( $post_id, 'dns_mem_price_adult', '0' );
 										update_post_meta( $post_id, 'dns_mpa_enable', '' );
 									}
-									else {
-										update_post_meta( $post_id, 'dns_mpa_enable', 'on' );
-									}
-																	}
-								elseif ( empty( $member_price ) ) {
-									update_post_meta( $post_id, 'dns_mem_price_adult', '0' );
-									update_post_meta( $post_id, 'dns_mpa_enable', '' );
-								}	
+								}
 							}
 							// Skip an unlisted program id
 							else {
@@ -119,7 +145,11 @@ class dns_program_admin {
 		?>
 			<form method="post" action="" enctype="multipart/form-data">
 				<h2>Update Program Data</h2>
-				<p>Supply a CSV file with a column labeled 'postid' and columns for 'programnumber' and the prices</p>
+				<p>For existing Delnature Programs, use the file selector below to select a CSV and hit Update. The CSV
+					will have a header row containing key names to reference different program fields, and a row for each
+					program being updated.  There is only one required column, 'postid', and the following columns are 
+					supported:</p>
+				<p><em>'programnumber', 'price', 'memberprice', 'pricedetails', 'maxparticipants'</em></p>
 				<input type="file" name="dns_update_file" size="255" tabindex="1" />
 				<input type="submit" name="dns_update_action" text="Update" tabindex="2" />
 			</form>
