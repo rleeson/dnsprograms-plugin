@@ -1,6 +1,9 @@
 <?php
 /**
  * Class registers all taxonomies used by this plugin and their associated meta boxes
+ * 
+ * @since 1.3
+ * @package dnsprograms-plugins
  */
 if ( !class_exists( 'dns_taxonomies' ) ) {
 	class dns_taxonomies {
@@ -15,7 +18,6 @@ if ( !class_exists( 'dns_taxonomies' ) ) {
 			add_action( 'admin_init', array( $this, 'save_post_handlers' ) );
 			add_action( 'add_meta_boxes', array( $this, 'add_admin_boxes' ) );
 			add_action( 'admin_head', array( $this, 'hide_admin_boxes' ) );
-			add_filter( 'wp_insert_post_data', array( $this, 'limit_character_length' ) );
 			add_filter( 'manage_edit-post_columns', array( $this, 'columns_filter' ), 10, 1 );
 			add_filter( 'manage_edit-post_sortable_columns', array( $this, 'columns_sortable' ) );
 			add_filter( 'posts_clauses', array( $this, 'age_range_sort_column' ), 10, 2 );
@@ -23,11 +25,6 @@ if ( !class_exists( 'dns_taxonomies' ) ) {
 			add_filter( 'posts_clauses', array( $this, 'program_locations_sort_column' ), 10, 2 );
 			add_filter( 'posts_clauses', array( $this, 'series_sort_column' ), 10, 2 );
 		}	
-		
-		function limit_character_length( $data ) {
-			$data['post_content'] = substr( $data['post_content'], 0, DNS_PROGRAM_CHARACTER_LIMIT );
-			return $data;
-		}
 		
 		function add_admin_boxes() {
 			add_meta_box( 'dns-age-ranges-div', __( 'Age Ranges' ), 
@@ -435,12 +432,12 @@ if ( !class_exists( 'dns_taxonomies' ) ) {
 		        <?php
 				foreach ( $terms as $term ) {
 					if ( !is_wp_error( $names ) && !empty( $names ) && !strcmp( $term->slug, $names[0]->slug)) {
-						echo "<option class='program-locations-option' value='" . $term->slug . "' selected>" 
-							. $term->name . "</option>"; 
+						echo "<option class='program-locations-option' value='" . esc_attr( $term->slug ) . "' selected>" 
+							. esc_html( $term->name ) . "</option>"; 
 					}
 					else {
-						echo "<option class='program-locations-option' value='" . $term->slug . "'>" 
-							. $term->name . "</option>"; 
+						echo "<option class='program-locations-option' value='" . esc_attr( $term->slug ) . "'>" 
+							. esc_html( $term->name ) . "</option>"; 
 					}
 				}
 		   ?>
@@ -537,12 +534,12 @@ if ( !class_exists( 'dns_taxonomies' ) ) {
 		        <?php
 				foreach ( $terms as $term ) {
 					if ( !is_wp_error( $names ) && !empty( $names ) && !strcmp( $term->slug, $names[0]->slug)) {
-						echo "<option class='series-option' value='" . $term->slug . "' selected>" 
-							. $term->name . "</option>"; 
+						echo "<option class='series-option' value='" . esc_attr( $term->slug ) . "' selected>" 
+							. esc_html( $term->name ) . "</option>"; 
 					}
 					else {
-						echo "<option class='series-option' value='" . $term->slug . "'>" 
-							. $term->name . "</option>"; 
+						echo "<option class='series-option' value='" . esc_attr( $term->slug ) . "'>" 
+							. esc_html( $term->name ) . "</option>"; 
 					}
 				}
 		   ?>

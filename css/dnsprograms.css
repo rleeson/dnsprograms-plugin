@@ -34,11 +34,19 @@
 	margin-bottom: 0;
 }
 
-#edit-character-count {
+.counter-wrapper {
 	background-color: #F7F7F7;
 	border: 1px solid #DEDEDE;
-	font-size: 12px;
+	border-top: 0 none;
 	margin-bottom: 20px;
+}
+
+#edit-character-count,
+#title-character-count {
+	display: table-cell;
+	background-color: #F7F7F7;
+	border-right: 1px solid #DEDEDE;
+	font-size: 12px;
 	padding: 2px 10px;
 }
 
@@ -95,6 +103,11 @@ input[name="dns_price_details"] {
 
 #dns_start_time, #dns_end_time {
 	width: 87px;
+}
+
+#dns_date_details { 
+	width: 100%;
+	margin-bottom: 10px;
 }
 
 .notice {

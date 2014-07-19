@@ -2,7 +2,7 @@
 /**
  * Class registers meta boxes used by this plugin on the post page
  * 
- * @since 1.2
+ * @since 1.3
  * @package dnsprograms-plugins
  */
 if ( !class_exists( 'dns_meta_boxes' ) ) {
@@ -18,9 +18,10 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 			add_action( 'admin_init', array( $this, 'save_post_handlers' ) );
 			add_action( 'add_meta_boxes', array( $this, 'add_admin_boxes' ) );
 				
-			// Limit program description character length
+			// Limit program title and description character length
 			add_action( 'edit_form_after_editor', array( $this, 'edit_form_character_count' ) );
-			
+			add_filter( 'wp_insert_post_data', array( $this, 'limit_character_length' ) );
+				
 			// Add Quick Edit functionality
 			add_filter( 'manage_edit-post_columns', array( $this, 'edit_posts_columns' ) );
 			add_action( 'manage_posts_custom_column', array( $this, 'list_program_columns' ), 10, 2 );
@@ -58,6 +59,36 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 					DNS_PROGRAM_PLUGIN_VERSION, true );
 			}
 		}
+		
+		/******************************
+		 * Title and Description Save
+		******************************/
+		/**
+		 * Filter to limit program title and description lengths
+		 * 
+		 * @param unknown $data
+		 * @return unknown
+		 */
+		public function limit_character_length( $data ) {
+			$data[ 'post_title' ]	= self::trim_field( $data[ 'post_title' ], DNS_PROGRAM_TITLE_LIMIT );
+			$data[ 'post_content' ]	= self::trim_field( $data[ 'post_content' ], DNS_PROGRAM_CHARACTER_LIMIT );
+			return $data;
+		}
+		
+		/**
+		 * Reusable function to trim a text field to a given non-zero length
+		 * 
+		 * @param string $field String field value 
+		 * @param integer $length Maximum length of field
+		 * @return unknown
+		 */
+		private function trim_field( $field, $length = 0 ) {
+			if ( $length > 0 && !empty( $field ) && ( strlen( $field ) > $length ) ) {
+				$field = substr( sanitize_text_field( $field ), 0, $length );
+			}
+			return $field;
+		}
+		
 		
 		/******************************
 		 * Quick Edit Functionality
@@ -98,16 +129,10 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 					$class = 'class="required"';
 				break;
 				case 'dns_price_adult':
-					$label = 'Adult ($)';
+					$label = 'Price ($)';
 				break;
 				case 'dns_mem_price_adult':
-					$label = 'Member Adult ($)';
-				break;
-				case 'dns_price_child':
-					$label = 'Child ($)';
-				break;
-				case 'dns_mem_price_child':
-					$label = 'Member Child ($)';
+					$label = 'Member Price ($)';
 				break;
 				case 'dns_max_participants':
 					$label = 'Maximum Participants';
@@ -160,10 +185,8 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 		public function edit_posts_columns( $columns ) {
 			$new_columns = array(
 				'dns_program_number'	=> __( 'Program Number', 'dnsprograms-plugins' ),
-				'dns_price_adult'		=> __( 'Adult ($)', 'dnsprograms-plugins' ),
-				'dns_mem_price_adult'	=> __( 'Member Adult ($)', 'dnsprograms-plugins' ),
-				'dns_price_child'		=> __( 'Child ($)', 'dnsprograms-plugins' ),
-				'dns_mem_price_child'	=> __( 'Member Child ($)', 'dnsprograms-plugins' ),
+				'dns_price_adult'		=> __( 'Price ($)', 'dnsprograms-plugins' ),
+				'dns_mem_price_adult'	=> __( 'Member Price ($)', 'dnsprograms-plugins' ),
 				'dns_max_participants'	=> __( 'Maximum Participants', 'dnsprograms-plugins' ),
 				'dns_start_date'		=> __( 'Start Date', 'dnsprograms-plugins' ),
 				'dns_end_date'			=> __( 'End Date', 'dnsprograms-plugins' ),
@@ -201,8 +224,6 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 					'dns_program_number',
 					'dns_price_adult',
 					'dns_mem_price_adult',
-					'dns_price_child',
-					'dns_mem_price_child',
 					'dns_max_participants',
 					'dns_start_date', 
 					'dns_end_date', 
@@ -243,9 +264,15 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 		 * Register a message showing the program description character limit
 		 */
 		public function edit_form_character_count() { ?>
-			<div id="edit-character-count">Character Count: 
-				<span class="character-count">-</span> 
-				<span class="character-limit"> (Maximum Allowed: <?php echo DNS_PROGRAM_CHARACTER_LIMIT; ?>)</span>
+			<div class="counter-wrapper">
+				<div id="title-character-count">Title Character Count: 
+					<span class="character-count">-</span> 
+					<span class="character-limit"> (Maximum Allowed: <?php echo DNS_PROGRAM_TITLE_LIMIT; ?>)</span>
+				</div>
+				<div id="edit-character-count">Description Character Count: 
+					<span class="character-count">-</span> 
+					<span class="character-limit"> (Maximum Allowed: <?php echo DNS_PROGRAM_CHARACTER_LIMIT; ?>)</span>
+				</div>
 			</div>
 		<?php
 		}
@@ -266,7 +293,8 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 				'dns_end_time'				=> '',
 				'dns_frequency'				=> 0,
 				'dns_days_week'				=> array(),
-				'dns_day_month'				=> 0
+				'dns_day_month'				=> 0,
+				'dns_date_details'			=> ''
 			);
 			foreach( $settings as $key => $value ) {
 				$post_meta = get_post_meta( $post->ID, $key, true );
@@ -346,6 +374,12 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 				<div class="notice group"><strong>Note:</strong> If the date falls after the end of a month, 
 					the last day of that month will be selected</div>
 			</div>
+			<div class="setting">
+				<label for="dns_date_details">Date Details</label>
+				<input type="text" id="dns_date_details" name="dns_date_details"
+					value="<?php echo esc_html__( $settings[ 'dns_date_details' ] ); ?>" />
+				<div class="notice group"><strong>Note:</strong> Date details is a free form field, no validation.</div>
+			</div>
 			<?php
 		}
 		
@@ -358,12 +392,8 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 				'dns_program_number'	=> '',
 				'dns_max_participants'	=> '',
 				'dns_pa_enable'			=> false,
-				'dns_pc_enable'			=> false,
-				'dns_price_child'		=> '',
 				'dns_price_adult'		=> '',
 				'dns_mpa_enable'		=> false,
-				'dns_mpc_enable'		=> false,
-				'dns_mem_price_child'	=> '',
 				'dns_mem_price_adult'	=> '',
 				'dns_price_details'		=> ''
 			 );
@@ -382,7 +412,7 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 					value="<?php echo esc_html__( $settings[ 'dns_program_number' ] ); ?>" />
 			</div>
 			<div class="setting">
-				<label for="dns_price_adult">Price - Adult</label>
+				<label for="dns_price_adult">Price</label>
 				<input type="checkbox" id="dns_pa_enable" name="dns_pa_enable"
 					<?php checked( $settings[ 'dns_pa_enable' ], 'on' ); ?> />
 				<input type="text" name="dns_price_adult" class="required" 
@@ -390,28 +420,12 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 					<?php disabled( $settings[ 'dns_pa_enable' ], false )?> />
 			</div>
 			<div class="setting">
-				<label for="dns_price_child">Price - Child</label>
-				<input type="checkbox" id="dns_pc_enable" name="dns_pc_enable"
-					<?php checked( $settings[ 'dns_pc_enable' ], 'on' ); ?> />
-				<input type="text" name="dns_price_child" class="required" 
-					value="<?php echo esc_html__( $settings[ 'dns_price_child' ] ); ?>" 
-					<?php disabled( $settings[ 'dns_pc_enable' ], false )?> />
-			</div>
-			<div class="setting">
-				<label for="dns_mem_price_adult">Member Price - Adult</label>
+				<label for="dns_mem_price_adult">Member Price</label>
 				<input type="checkbox" id="dns_mpa_enable" name="dns_mpa_enable"
 					<?php checked( $settings[ 'dns_mpa_enable' ], 'on' ); ?>  />
 				<input type="text" name="dns_mem_price_adult" class="required" 
 					value="<?php echo esc_html__( $settings[ 'dns_mem_price_adult' ] ); ?>" 
 					<?php disabled( $settings[ 'dns_mpa_enable' ], false )?> />
-			</div>
-			<div class="setting">
-				<label for="dns_mem_price_child">Member Price - Child</label>
-				<input type="checkbox" id="dns_mpc_enable" name="dns_mpc_enable"
-					<?php checked( $settings[ 'dns_mpc_enable' ], 'on' ); ?> />
-				<input type="text" name="dns_mem_price_child" class="required" 
-					value="<?php echo esc_html__( $settings[ 'dns_mem_price_child' ] ) ; ?>" 
-					<?php disabled( $settings[ 'dns_mpc_enable' ], false )?> />
 			</div>
 			<div class="setting">
 				<label for="dns_max_participants">Maximum Participants</label>
@@ -483,6 +497,8 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 				
 			update_post_meta( $post_id, 'dns_days_week', $dow_array );
 			update_post_meta( $post_id, 'dns_day_month', $dom );
+			update_post_meta( $post_id, 'dns_date_details', 
+				sanitize_text_field( $_POST[ 'dns_date_details' ] ) );
 		}
 		
 		/**
@@ -507,8 +523,7 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 			}
 			
 			// Verify and save the currency fields for member prices
-			$field_array = array( 'dns_price_adult', 'dns_price_child', 'dns_mem_price_adult', 
-				'dns_mem_price_child' );
+			$field_array = array( 'dns_price_adult', 'dns_mem_price_adult' );
 			
 			foreach ( $field_array as $field_index ) {
 				$this->field_updater( $post_id, $field_index, CURRENCY_FORMAT, '$', 
@@ -527,7 +542,7 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 				sanitize_text_field( $_POST[ 'dns_price_details' ] ) );
 			
 			// Save price enables values
-			$enable_array = array( 'dns_pa_enable', 'dns_pc_enable', 'dns_mpa_enable', 'dns_mpc_enable' );
+			$enable_array = array( 'dns_pa_enable', 'dns_mpa_enable' );
 			
 			foreach ( $enable_array as $enable ) {
 				update_post_meta( $post_id, $enable, $_POST[ $enable ] );
