@@ -1,7 +1,7 @@
 /**
  * DNS Programs JavaScript functionality
  * 
- * @since 1.1
+ * @since 1.3
  */
 
 // Bind to the Add/Update post and check text length
