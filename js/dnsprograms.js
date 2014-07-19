@@ -47,10 +47,10 @@ var dns_programs = (function($) {
 	function title_character_count() {
 		// Check to see if the editor exists, if not, return
 		var textcontainer = $('input[name="post_title"]');
-		if (typeof textcontainer == 'undefined') {
+		if (textcontainer.length === 0) {
 			return;
 		}
-		
+
 		// Text counter
 		var titlelength = textcontainer.val().length;
 				
