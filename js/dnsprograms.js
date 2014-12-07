@@ -220,7 +220,7 @@ var dns_programs = (function($) {
 		init: function() {
 			ready_handler();
 		}
-	}
+	};
 })(jQuery);
 
 dns_programs.init();
