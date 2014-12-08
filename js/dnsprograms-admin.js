@@ -1,6 +1,7 @@
 var dns_programs_admin = (function($) {
 	function detectFeaturedImage() {
 		if ( $.find('#postimagediv').length !== 0 ) {
+			insertImageWarning();
 			if ( $('#postimagediv').find('img').length===0 ) {
 				$('#nofeature-message').addClass("error").html('<p>Featured Image Required</p>');
 				$('#publish').attr('disabled','disabled');
@@ -10,6 +11,12 @@ var dns_programs_admin = (function($) {
 				$('#publish').removeAttr('disabled');
 			}
 		}
+	}
+	
+	function insertImageWarning() {
+	    if ($('body').find("#nofeature-message").length===0) {
+			$('h2').after('<div id="nofeature-message"></div>');
+	    }
 	}
 	
 	function readyHandler() { 
@@ -31,10 +38,7 @@ var dns_programs_admin = (function($) {
 	}
 	
 	function registerImageWarning() {
-	    if ($('body').find("#nofeature-message").length===0) {
-			$('h2').after('<div id="nofeature-message"></div>');
-	    }
-
+		insertImageWarning();
 		setInterval(detectFeaturedImage, 5000);
 		detectFeaturedImage();		
 	}
