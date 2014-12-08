@@ -1,4 +1,14 @@
+/**
+ * DNS Programs JavaScript admin functionality
+ * 
+ * @since 1.3
+ * @version 1.4
+ */
+
 var dns_programs_admin = (function($) {
+	/**
+	 * Check if a featured image has been associated with the program, disables/enabled based on image association
+	 */
 	function detectFeaturedImage() {
 		if ( $.find('#postimagediv').length !== 0 ) {
 			insertImageWarning();
@@ -13,6 +23,9 @@ var dns_programs_admin = (function($) {
 		}
 	}
 	
+	/**
+	 * Register error message area in the post/program message area
+	 */
 	function insertImageWarning() {
 	    if ($('body').find("#nofeature-message").length===0) {
 			$('h2').after('<div id="nofeature-message"></div>');
@@ -37,6 +50,9 @@ var dns_programs_admin = (function($) {
 		});
 	}
 	
+	/**
+	 * Initialize featured image check for programs
+	 */
 	function registerImageWarning() {
 		insertImageWarning();
 		setInterval(detectFeaturedImage, 5000);
