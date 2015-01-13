@@ -46,6 +46,7 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 		 * Register post save routines
 		 */
 		public function save_post_handlers() {
+			add_action( 'transition_post_status', array( $this, 'publish_image_check' ), 10, 3 );
 			add_action( 'save_post', array( $this, 'program_calendar_save' ) );
 			add_action( 'save_post', array( $this, 'program_details_save' ) );
 		}
@@ -88,6 +89,17 @@ if ( !class_exists( 'dns_meta_boxes' ) ) {
 			}
 			return $field;
 		}
+		
+		/******************************
+		 * Required Image Functionality
+		******************************/
+		
+		function publish_image_check( $new_status, $old_status, $post ) {
+			if ( $new_status === 'publish' && !has_post_thumbnail( $post->ID ) ) {
+				wp_die( __( 'You cannot publish a program without a featured image, hit the back arrow to continue.', 'dnsprograms' ) );
+			}
+		}
+		
 		
 		
 		/******************************
